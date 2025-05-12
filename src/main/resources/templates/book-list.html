@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Book List</title>
+
+    <!-- CSS Links -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #007bff;
+            --hover-color: #f1f1f1;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .container {
+            margin-top: 2rem;
+            margin-bottom: 3rem;
+        }
+        h2 {
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand fw-bold" th:href="@{/}">📚 Bookstore</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link active" th:href="@{/books}"><i class="bi bi-book"></i> Books</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/authors}"><i class="bi bi-people"></i> Authors</a></li>
+                <li class="nav-item" sec:authorize="hasRole('ROLE_ADMIN')">
+                    <a class="nav-link" th:href="@{/users}"><i class="bi bi-people"></i> User List</a>
+                </li>
+            </ul>
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item" sec:authorize="isAuthenticated()">
+                    <span class="nav-link user-info"><i class="bi bi-person-circle"></i> <span sec:authentication="name"></span></span>
+                </li>
+                <li class="nav-item" sec:authorize="isAuthenticated()">
+                    <form th:action="@{/logout}" method="post" class="nav-link">
+                        <button type="submit" class="btn btn-link text-white p-0"><i class="bi bi-box-arrow-right"></i> Logout</button>
+                    </form>
+                </li>
+                <li class="nav-item" sec:authorize="!isAuthenticated()"><a class="nav-link" th:href="@{/login}"><i class="bi bi-box-arrow-in-right"></i> Login</a></li>
+                <li class="nav-item" sec:authorize="!isAuthenticated()"><a class="nav-link" th:href="@{/register}"><i class="bi bi-person-plus"></i> Register</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<input type="hidden" id="userRole" th:value="${#request.isUserInRole('ROLE_ADMIN')}">
+
+<div class="container">
+    <h2><i class="bi bi-book"></i> Book List</h2>
+
+    <div class="d-flex justify-content-center gap-3 mb-4">
+        <a th:href="@{/books/new}" class="btn btn-outline-black" sec:authorize="hasRole('ROLE_ADMIN')">
+            <i class="bi bi-plus-circle"></i> Add New Book
+        </a>
+        <a th:href="@{/authors}" class="btn btn-outline-black">
+            <i class="bi bi-people"></i> View Authors
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table id="bookTable" class="table table-hover align-middle" style="width:100%">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Publication Date</th>
+                <th>Last Updated</th>
+                <th sec:authorize="hasRole('ROLE_ADMIN')">Actions</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- JavaScript Libraries -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    $(document).ready(function() {
+        if (!$.fn.DataTable) {
+            console.error("DataTables failed to load! Check script sources.");
+            return;
+        }
+
+        let isAdmin = document.getElementById("userRole")?.value === "true";
+
+        var table = $('#bookTable').DataTable({
+            "processing": true,
+            "serverSide": true,
+            "ajax": {
+                "url": "/books/api",
+                "type": "GET",
+                "data": function(d) {
+                    return {
+                        "draw": d.draw,
+                        "start": d.start,
+                        "length": d.length,
+                        "searchValue": d.search.value?.trim() || ""
+                    };
+                }
+            },
+            "columns": [
+                {"data": "id"},
+                {"data": "title"},
+                {"data": "authorName"},
+                {"data": "publicationDate", "render": data => data ? new Date(data).toLocaleDateString() : "N/A"},
+                {"data": "lastUpdated", "render": data => data ? new Date(data).toLocaleString() : "N/A"},
+                {
+                    "data": "id",
+                    "render": function(data) {
+                        return isAdmin ? `
+                            <a href='/books/edit/${data}' class='btn btn-sm btn-outline-warning'>Edit</a>
+                            <a href='/books/delete/${data}' class='btn btn-sm btn-outline-danger' >Delete</a>
+                        ` : '';
+                    },
+                    "orderable": false
+                }
+            ]
+        });
+    });
+
+</script>
+
+</body>
+</html>

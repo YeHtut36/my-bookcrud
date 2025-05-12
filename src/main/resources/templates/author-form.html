@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${author.id != null} ? 'Edit Author' : 'Add New Author'">Author Form</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Inter', sans-serif;
+        }
+        .container {
+            max-width: 500px;
+            margin-top: 40px;
+        }
+        .card {
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background-color: white;
+        }
+        h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .btn-save {
+            width: 100%;
+            font-size: 18px;
+            padding: 10px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+    </style>
+
+</head>
+<body>
+
+
+<nav class="navbar navbar-dark bg-black">
+    <div class="container">
+        <a class="navbar-brand" href="/">Bookstore</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item"><a class="nav-link" th:href="@{/books}">📚 Books</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/authors}">👥 Authors</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="card">
+        <h2 th:text="${author.id != null} ? 'Edit Author' : 'Add New Author'">Author Form</h2>
+
+        <form th:action="@{/authors/save}" method="post" th:object="${author}">
+            <input type="hidden" th:field="*{id}" />
+
+            <div class="mb-3">
+                <label for="name" class="form-label">Author Name:</label>
+                <input type="text" id="name" class="form-control" th:field="*{name}" required />
+            </div>
+
+            <button type="submit" class="btn btn-dark btn-save">Save</button>
+        </form>
+
+        <div class="btn-group">
+            <a th:href="@{/authors}" class="btn btn-outline-dark">👥 Back to Authors</a>
+            <a th:href="@{/books}" class="btn btn-outline-dark">📚 View Books</a>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
