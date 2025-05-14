@@ -12,13 +12,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Mapper(componentModel = "spring")
-public interface BookMapper {
+public interface BookMapper extends BaseMapper<BookDTO, Book>{
+    @Override
     @Mapping(target = "authorId", source = "author.id")
     @Mapping(target = "authorName", source = "author.name")
-    BookDTO toBookDto(Book book);
+    BookDTO toDto(Book book);
 
+    @Override
     @Mapping(target = "author", source = "authorId", qualifiedByName = "authorIdToAuthor")
-    Book toBook(BookDTO bookDTO);
+    Book toEntity(BookDTO bookDTO);
 
     @Named("authorIdToAuthor")
     default Author authorIdToAuthor(Long authorId) {

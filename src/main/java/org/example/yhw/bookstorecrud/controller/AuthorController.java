@@ -3,6 +3,7 @@ package org.example.yhw.bookstorecrud.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.example.yhw.bookstorecrud.dto.AuthorDTO;
 import org.example.yhw.bookstorecrud.exception.ResourceNotFoundException;
+import org.example.yhw.bookstorecrud.mapper.AuthorMapper;
 import org.example.yhw.bookstorecrud.model.Author;
 import org.example.yhw.bookstorecrud.queryCriteria.AuthorCriteria;
 import org.example.yhw.bookstorecrud.service.AuthorService;
@@ -23,10 +24,12 @@ import org.springframework.web.bind.annotation.*;
 public class AuthorController {
 
     private final AuthorService authorService;
+    private final AuthorMapper authorMapper;
 
     @Autowired
-    public AuthorController(AuthorService authorService) {
+    public AuthorController(AuthorService authorService, AuthorMapper authorMapper) {
         this.authorService = authorService;
+        this.authorMapper = authorMapper;
     }
     @GetMapping
     public String showAuthorList() {
@@ -55,26 +58,23 @@ public class AuthorController {
         return ResponseEntity.ok(output);
     }
 
-
-    @GetMapping("/new")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public String createAuthorForm(Model model) {
-        model.addAttribute("author", new Author());
-        return "author-form";
-    }
-
-    @GetMapping("/edit/{id}")
+    @GetMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public String editAuthorForm(@PathVariable Long id, Model model) {
-        Author author = authorService.getAuthorById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Author not found with id: " + id));
-        model.addAttribute("author", author);
+        
+        AuthorDTO authorDto = authorService.getAuthorById(id)
+                .map(authorMapper::toDto)
+                                .orElse(new AuthorDTO());
+
+        model.addAttribute("author", authorDto);
         return "author-form";
     }
 
     @PostMapping("/save")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public String saveAuthor(@ModelAttribute Author author) {
+    public String saveAuthor(@ModelAttribute AuthorDTO authorDto) {
+
+        Author author = authorMapper.toEntity(authorDto);
         authorService.saveAuthor(author);
         return "redirect:/authors";
     }

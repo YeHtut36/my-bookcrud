@@ -29,11 +29,11 @@ public class BookService {
     public Page<BookDTO> searchBooks(BookCriteria criteria, Pageable pageable) {
         Specification<Book> specification = (root, query, cb) -> QueryHelper.getPredicate(root, criteria, query, cb);
         return bookRepository.findAll(specification, pageable)
-                .map(bookMapper::toBookDto);
+                .map(bookMapper::toDto);
     }
 
     public Page<BookDTO> getAllBooks(Pageable pageable) {
-        return bookRepository.findAll(pageable).map(bookMapper::toBookDto);
+        return bookRepository.findAll(pageable).map(bookMapper::toDto);
     }
 
     public long countAllBooks() {

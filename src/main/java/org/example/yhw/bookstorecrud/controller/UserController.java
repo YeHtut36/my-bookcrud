@@ -60,18 +60,20 @@ public class UserController {
     }
 
 
-    @GetMapping("/edit/{id}")
+    @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public String editUserForm(@PathVariable Long id, Model model) {
-        User user = userService.getUserById(id)
-                .orElse(new User());
-        model.addAttribute("user", user);
+        UserDTO userDto = userService.getUserById(id)
+                        .map(userMapper::toDto)
+                                .orElse(new UserDTO());
+        model.addAttribute("user", userDto);
         return "user-form";
     }
 
     @PostMapping("/save")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public String saveUser(@ModelAttribute User user) {
+    public String saveUser(@ModelAttribute UserDTO userDto) {
+        User user = userMapper.toEntity(userDto);
         userService.saveUser(user);
         return "redirect:/users";
     }
@@ -86,9 +88,10 @@ public class UserController {
     @GetMapping("/profile")
     public String userProfile(Model model) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = userService.getUserByUsername(authentication.getName())
+        UserDTO userDto = userService.getUserByUsername(authentication.getName())
+                .map(userMapper::toDto)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        model.addAttribute("user", user);
+        model.addAttribute("user", userDto);
         return "user-profile";
     }
 }

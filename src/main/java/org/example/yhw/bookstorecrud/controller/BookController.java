@@ -115,18 +115,6 @@ public class BookController {
         return DataTableOutput.of(bookPage, bookService.countAllBooks(), dummyInput);
     }
 
-    @GetMapping("/new")
-    public String createBookForm(Model model, Authentication authentication) {
-        if (!authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
-            model.addAttribute("error", "You don't have permission to access this page");
-            return "book-list";
-        }
-        model.addAttribute("book", new BookDTO());
-        model.addAttribute("authors", authorService.getAllAuthors(PageRequest.of(0, 100)));
-        return "book-form";
-    }
-
     @PostMapping("/save")
     public String saveBook(@Valid @ModelAttribute("book") BookDTO bookDTO,
                            BindingResult bindingResult, Model model) {
@@ -136,7 +124,7 @@ public class BookController {
             return "book-form";
         }
 
-        Book book = bookMapper.toBook(bookDTO);
+        Book book = bookMapper.toEntity(bookDTO);
         Author author = authorService.getAuthorById(bookDTO.getAuthorId())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid author Id: " + bookDTO.getAuthorId()));
 
@@ -148,16 +136,24 @@ public class BookController {
     }
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @GetMapping("/edit/{id}")
+    @GetMapping("/{id}")
     public String editBookForm(@PathVariable Long id, Model model, Authentication authentication) {
         if (!authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
-            return "redirect:/books?error=You cannot edit books.";
+            return "redirect:/books?error=AccessDenied";
         }
 
-        Book book = bookService.getBookById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid book Id: " + id));
-        model.addAttribute("book", bookMapper.toBookDto(book));
+//        if(id == null || id == 0){
+//            model.addAttribute("book", new BookDTO());
+//            model.addAttribute("authors", authorService.getAllAuthors(PageRequest.of(0,100)));
+//            return "book-form";
+//        }
+
+        BookDTO bookDto = bookService.getBookById(id)
+                .map(bookMapper::toDto)
+                        .orElse(new BookDTO());
+
+        model.addAttribute("book", bookDto);
         model.addAttribute("authors", authorService.getAllAuthors(PageRequest.of(0, 100)));
         return "book-form";
     }

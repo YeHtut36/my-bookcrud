@@ -80,7 +80,7 @@
     <h2><i class="bi bi-book"></i> Book List</h2>
 
     <div class="d-flex justify-content-center gap-3 mb-4">
-        <a th:href="@{/books/new}" class="btn btn-outline-dark" sec:authorize="hasRole('ROLE_ADMIN')">
+        <a th:href="@{/books/0}" class="btn btn-outline-dark" sec:authorize="hasRole('ROLE_ADMIN')">
             <i class="bi bi-plus-circle"></i> Add New Book
         </a>
         <a th:href="@{/authors}" class="btn btn-outline-dark">
@@ -153,7 +153,7 @@
                     render: function(data) {
                         if (!isAdmin) return '';
                         return `
-                            <a href='/books/edit/${data}' class='btn btn-sm btn-warning'>Edit</a>
+                            <a href='/books/${data}' class='btn btn-sm btn-warning'>Edit</a>
                             <a href='/books/delete/${data}' class='btn btn-sm btn-danger' onclick="return confirm('Are you sure?')">Delete</a>
                         `;
                     },

@@ -6,14 +6,14 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
-public interface AuthorMapper {
-//    @Mapping(target = "id", source = "id")
-//    @Mapping(target = "name", source = "name")
+public interface AuthorMapper extends BaseMapper<AuthorDTO, Author >{
+
+    @Override
     @Mapping(target = "booksCount", expression = "java(author.getBooks() != null ? author.getBooks().size() : 0)")
-    AuthorDTO toAuthorDto(Author author);
+    AuthorDTO toDto(Author author);
 
     @Mapping(target = "id", source = "id")
     @Mapping(target = "name", source = "name")
-    Author toAuthor(AuthorDTO authorDTO);
+    Author toEntity(AuthorDTO authorDTO);
 
 }

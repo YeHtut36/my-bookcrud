@@ -3,6 +3,7 @@ package org.example.yhw.bookstorecrud.service;
 import lombok.AllArgsConstructor;
 import org.example.yhw.bookstorecrud.dto.BookDTO;
 import org.example.yhw.bookstorecrud.dto.UserDTO;
+import org.example.yhw.bookstorecrud.dto.UserRegistrationDTO;
 import org.example.yhw.bookstorecrud.mapper.UserMapper;
 import org.example.yhw.bookstorecrud.model.Book;
 import org.example.yhw.bookstorecrud.model.User;
@@ -32,21 +33,14 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-        if (user.getPassword() == null || user.getPassword().isEmpty()) {
-            throw new IllegalArgumentException("User password cannot be null or empty");
-        }
-        if (user.getRole() == null || user.getRole().isEmpty()) {
-            throw new IllegalArgumentException("User role cannot be null or empty");
-        }
+        validateUser(user);
 
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
@@ -54,11 +48,19 @@ public class UserService implements UserDetailsService {
                 AuthorityUtils.createAuthorityList(user.getRole())
         );
     }
+    private void validateUser(User user) {
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            throw new IllegalArgumentException("User password cannot be null or empty");
+        }
+        if (user.getRole() == null || user.getRole().isEmpty()) {
+            throw new IllegalArgumentException("User role cannot be null or empty");
+        }
+    }
 
     public Page<UserDTO> searchUsers(UserCriteria criteria, Pageable pageable) {
         Specification<User> specification = (root, query, cb) -> QueryHelper.getPredicate(root, criteria, query, cb);
         return userRepository.findAll(specification, pageable)
-                .map(userMapper::toUserDto);
+                .map(userMapper::toDto);
     }
 
     public User saveUser(User user) {
@@ -66,26 +68,38 @@ public class UserService implements UserDetailsService {
             throw new IllegalArgumentException("User cannot be null");
         }
 
-        String role = user.getRole();
-        user.setRole(role == null || role.isEmpty() ? "ROLE_USER"
-                : role.startsWith("ROLE_") ? role : "ROLE_" + role);
+        normalizeRole(user);
 
         if (user.getId() != null) {
             User existingUser = userRepository.findById(user.getId())
-                    .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                    .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + user.getId()));
+
             if (user.getPassword() == null || user.getPassword().isEmpty()) {
                 user.setPassword(existingUser.getPassword());
+            } else {
+                user.setPassword(passwordEncoder.encode(user.getPassword()));
             }
         } else {
+            if ((user.getPassword() == null ||user.getPassword().isEmpty()) ) {
+                throw new IllegalArgumentException("Password must be provided for new user");
+            }
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
 
         return userRepository.save(user);
     }
 
+    private void normalizeRole(User user) {
+        String role = user.getRole();
+        if (role == null || role.isEmpty()) {
+            user.setRole("ROLE_USER");
+        } else if (!role.startsWith("ROLE_")) {
+            user.setRole("ROLE_" + role);
+        }
+    }
+
     public Page<User> getAllUsers(Pageable pageable) {
-        Page<User> users = userRepository.findAll(pageable);
-        return users != null ? users : Page.empty(pageable);
+       return userRepository.findAll(pageable);
     }
 
     public Optional<User> getUserById(Long id) {
@@ -105,6 +119,19 @@ public class UserService implements UserDetailsService {
 
     public Optional<User> getUserByUsername(String username) {
         return userRepository.findByUsername(username);
+    }
+
+    public void registerNewUser(UserRegistrationDTO registrationDTO) {
+        if (userRepository.existsByUsername(registrationDTO.getUsername())) {
+            throw new IllegalArgumentException("Username already exists");
+        }
+
+        User user = new User();
+        user.setUsername(registrationDTO.getUsername());
+        user.setPassword(passwordEncoder.encode(registrationDTO.getPassword()));
+        user.setRole(registrationDTO.getRole().startsWith("ROLE_") ? registrationDTO.getRole() : "ROLE_" + registrationDTO.getRole());
+
+        userRepository.save(user);
     }
 
 }

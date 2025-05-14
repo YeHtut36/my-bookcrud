@@ -26,12 +26,12 @@ public class AuthorService {
     public Page<AuthorDTO> searchAuthors(AuthorCriteria authorCriteria, Pageable pageable) {
         Specification<Author> specification = (root, query, cb) ->
                 QueryHelper.getPredicate(root, authorCriteria, query, cb);
-        return authorRepository.findAll(specification, pageable).map(authorMapper::toAuthorDto);
+        return authorRepository.findAll(specification, pageable).map(authorMapper::toDto);
     }
 
     public Page<AuthorDTO> getAllAuthors(Pageable pageable) {
         return authorRepository.findAll(pageable)
-                .map(authorMapper::toAuthorDto);
+                .map(authorMapper::toDto);
     }
 
     public Optional<Author> getAuthorById(Long id) {

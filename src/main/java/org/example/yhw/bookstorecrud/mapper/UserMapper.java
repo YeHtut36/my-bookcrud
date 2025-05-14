@@ -7,13 +7,11 @@ import org.mapstruct.Mapping;
 import org.springframework.stereotype.Component;
 
 @Mapper(componentModel = "spring")
-public interface UserMapper {
+public interface UserMapper extends BaseMapper<UserDTO, User>{
 
-    @Mapping(target = "id", source = "id")
-    @Mapping(target = "username", source = "username")
-    @Mapping(target = "role", source = "role")
-    UserDTO toUserDto(User user);
+    @Override
+    UserDTO toDto(User user);
 
-    User toUser(UserDTO userDTO);
+    User toEntity(UserDTO userDTO);
 
 }
