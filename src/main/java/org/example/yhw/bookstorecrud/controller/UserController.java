@@ -1,10 +1,17 @@
 package org.example.yhw.bookstorecrud.controller;
 
+import lombok.var;
+import org.example.yhw.bookstorecrud.dto.UserDTO;
+import org.example.yhw.bookstorecrud.mapper.UserMapper;
 import org.example.yhw.bookstorecrud.model.User;
+import org.example.yhw.bookstorecrud.queryCriteria.UserCriteria;
 import org.example.yhw.bookstorecrud.service.UserService;
+import org.example.yhw.bookstorecrud.vo.DataTableInput;
+import org.example.yhw.bookstorecrud.vo.DataTableOutput;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,23 +24,39 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final UserMapper userMapper;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, UserMapper userMapper) {
         this.userService = userService;
+        this.userMapper = userMapper;
     }
 
     @GetMapping
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public String listUsers(@RequestParam(defaultValue = "0") int page,
-                            @RequestParam(defaultValue = "5") int size,
-                            @RequestParam(required = false) String search,
-                            Model model) {
-
-        Pageable pageable = PageRequest.of(page, size);
-        Page<User> userPage = userService.getAllUsers(pageable);
-
-        model.addAttribute("userPage", userPage);
+    public String showUserList() {
         return "user-list";
+    }
+
+    @PostMapping(path = "/api", consumes = "application/json", produces = "application/json")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<DataTableOutput<UserDTO>> listUsers(@RequestBody DataTableInput dataTableInput) {
+        String searchValue = "";
+        if (dataTableInput.getSearch() != null && dataTableInput.getSearch().getValue() != null) {
+            searchValue = dataTableInput.getSearch().getValue().trim();
+        }
+
+        UserCriteria criteria = new UserCriteria();
+        criteria.setUsername(searchValue);
+
+        Pageable pageable = dataTableInput.getPageable();
+
+        var userPage = userService.searchUsers(criteria, pageable);
+        long totalRecords = userService.getAllUsers(Pageable.unpaged()).getTotalElements();
+
+        DataTableOutput<UserDTO> output = DataTableOutput.of(userPage, totalRecords, dataTableInput);
+        output.setDraw(dataTableInput.getDraw());
+
+        return ResponseEntity.ok(output);
     }
 
 

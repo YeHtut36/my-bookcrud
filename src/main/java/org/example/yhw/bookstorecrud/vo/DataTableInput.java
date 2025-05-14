@@ -151,5 +151,10 @@ public class DataTableInput {
         String columnName = columns.get(order.get(0).getColumn()).getData();
         return PageRequest.of(page, length, Sort.by(dir, columnName));
     }
+
+    public DataTableInput() {
+    }
+
+
 }
 

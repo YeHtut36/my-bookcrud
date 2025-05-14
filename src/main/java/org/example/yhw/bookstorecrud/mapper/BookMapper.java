@@ -1,5 +1,6 @@
 package org.example.yhw.bookstorecrud.mapper;
 
+import org.example.yhw.bookstorecrud.dto.AuthorDTO;
 import org.example.yhw.bookstorecrud.dto.BookDTO;
 import org.example.yhw.bookstorecrud.model.Author;
 import org.example.yhw.bookstorecrud.model.Book;

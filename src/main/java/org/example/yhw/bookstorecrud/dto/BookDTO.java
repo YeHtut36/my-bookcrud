@@ -1,6 +1,7 @@
 package org.example.yhw.bookstorecrud.dto;
 
 import lombok.*;
+import org.example.yhw.bookstorecrud.validation.PastOrPresentDate;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.Min;
@@ -21,6 +22,8 @@ public class BookDTO {
 
     private String authorName;
 
+    @NotNull(message = "Publication date is required")
+    @PastOrPresentDate
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate publicationDate;
 

@@ -8,15 +8,13 @@ import org.example.yhw.bookstorecrud.model.Book;
 import org.example.yhw.bookstorecrud.query.QueryHelper;
 import org.example.yhw.bookstorecrud.queryCriteria.BookCriteria;
 import org.example.yhw.bookstorecrud.repository.BookRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 
-import javax.persistence.criteria.Predicate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -27,6 +25,7 @@ public class BookService {
     private final BookRepository bookRepository;
     private final BookMapper bookMapper;
 
+    @Cacheable(value = "bookSearchCache", key = "#criteria.searchValue + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<BookDTO> searchBooks(BookCriteria criteria, Pageable pageable) {
         Specification<Book> specification = (root, query, cb) -> QueryHelper.getPredicate(root, criteria, query, cb);
         return bookRepository.findAll(specification, pageable)
@@ -34,9 +33,11 @@ public class BookService {
     }
 
     public Page<BookDTO> getAllBooks(Pageable pageable) {
-        Page<Book> books = bookRepository.findAll(pageable);
-        log.info("Total books found: {}", books.getTotalElements());
-        return books.map(bookMapper::toBookDto);
+        return bookRepository.findAll(pageable).map(bookMapper::toBookDto);
+    }
+
+    public long countAllBooks() {
+        return bookRepository.count();
     }
 
 

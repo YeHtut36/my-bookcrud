@@ -2,14 +2,14 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Book List</title>
 
-    <!-- CSS Links -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" />
 
     <style>
         :root {
@@ -22,7 +22,7 @@
             background-color: #f8f9fa;
         }
         .navbar {
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         .container {
             margin-top: 2rem;
@@ -34,9 +34,13 @@
             margin-bottom: 1.5rem;
             text-align: center;
         }
+        body.user th:last-child,
+        body.user td:last-child {
+            display: none;
+        }
     </style>
 </head>
-<body>
+<body th:classappend="${#request.isUserInRole('ROLE_ADMIN')} ? 'admin' : 'user'">
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
@@ -58,7 +62,9 @@
                 </li>
                 <li class="nav-item" sec:authorize="isAuthenticated()">
                     <form th:action="@{/logout}" method="post" class="nav-link">
-                        <button type="submit" class="btn btn-link text-white p-0"><i class="bi bi-box-arrow-right"></i> Logout</button>
+                        <button type="submit" class="btn btn-link text-white p-0">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </button>
                     </form>
                 </li>
                 <li class="nav-item" sec:authorize="!isAuthenticated()"><a class="nav-link" th:href="@{/login}"><i class="bi bi-box-arrow-in-right"></i> Login</a></li>
@@ -68,16 +74,16 @@
     </div>
 </nav>
 
-<input type="hidden" id="userRole" th:value="${#request.isUserInRole('ROLE_ADMIN')}">
+<input type="hidden" id="userRole" th:value="${#request.isUserInRole('ROLE_ADMIN')}" />
 
 <div class="container">
     <h2><i class="bi bi-book"></i> Book List</h2>
 
     <div class="d-flex justify-content-center gap-3 mb-4">
-        <a th:href="@{/books/new}" class="btn btn-outline-black" sec:authorize="hasRole('ROLE_ADMIN')">
+        <a th:href="@{/books/new}" class="btn btn-outline-dark" sec:authorize="hasRole('ROLE_ADMIN')">
             <i class="bi bi-plus-circle"></i> Add New Book
         </a>
-        <a th:href="@{/authors}" class="btn btn-outline-black">
+        <a th:href="@{/authors}" class="btn btn-outline-dark">
             <i class="bi bi-people"></i> View Authors
         </a>
     </div>
@@ -91,7 +97,7 @@
                 <th>Author</th>
                 <th>Publication Date</th>
                 <th>Last Updated</th>
-                <th sec:authorize="hasRole('ROLE_ADMIN')">Actions</th>
+                <th>Actions</th>
             </tr>
             </thead>
             <tbody></tbody>
@@ -101,56 +107,86 @@
 
 <!-- JavaScript Libraries -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<script>
-    $(document).ready(function() {
-        if (!$.fn.DataTable) {
-            console.error("DataTables failed to load! Check script sources.");
-            return;
-        }
-
-        let isAdmin = document.getElementById("userRole")?.value === "true";
+<script th:inline="none">
+    $(document).ready(function () {
+        var isAdmin = document.getElementById("userRole")?.value === "true";
 
         var table = $('#bookTable').DataTable({
-            "processing": true,
-            "serverSide": true,
-            "ajax": {
-                "url": "/books/api",
-                "type": "GET",
-                "data": function(d) {
-                    return {
-                        "draw": d.draw,
-                        "start": d.start,
-                        "length": d.length,
-                        "searchValue": d.search.value?.trim() || ""
-                    };
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '/books/api',
+                type: 'POST',
+                contentType: 'application/json',
+                data: function(d) {
+                    return JSON.stringify(d);
                 }
             },
-            "columns": [
-                {"data": "id"},
-                {"data": "title"},
-                {"data": "authorName"},
-                {"data": "publicationDate", "render": data => data ? new Date(data).toLocaleDateString() : "N/A"},
-                {"data": "lastUpdated", "render": data => data ? new Date(data).toLocaleString() : "N/A"},
+            columns: [
+                { data: 'id' },
+                { data: 'title' },
+                { data: 'authorName' },
                 {
-                    "data": "id",
-                    "render": function(data) {
-                        return isAdmin ? `
-                            <a href='/books/edit/${data}' class='btn btn-sm btn-outline-warning'>Edit</a>
-                            <a href='/books/delete/${data}' class='btn btn-sm btn-outline-danger' >Delete</a>
-                        ` : '';
+                    data: 'publicationDate',
+                    render: function(data) {
+                        if (!data) return 'N/A';
+                        const date = new Date(data);
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const year = date.getFullYear();
+                        return `${day}-${month}-${year}`;
+                    }
+                },
+                {
+                    data: 'lastUpdated',
+                    render: function(data) {
+                        return data ? new Date(data).toLocaleString() : 'N/A';
+                    }
+                },
+                {
+                    data: 'id',
+                    render: function(data) {
+                        if (!isAdmin) return '';
+                        return `
+                            <a href='/books/edit/${data}' class='btn btn-sm btn-warning'>Edit</a>
+                            <a href='/books/delete/${data}' class='btn btn-sm btn-danger' onclick="return confirm('Are you sure?')">Delete</a>
+                        `;
                     },
-                    "orderable": false
+                    orderable: false,
+                    searchable: false
                 }
-            ]
+            ],
+            order: [[1, 'asc']],
+            lengthMenu: [5, 10, 25, 50, 100],
+            pageLength: 10,
+
+            initComplete: function() {
+                var api = this.api();
+                var searchInput = $('#bookTable_filter input');
+
+                searchInput.off('.DT');
+
+                function debounce(fn, delay) {
+                    var timer = null;
+                    return function() {
+                        var context = this, args = arguments;
+                        clearTimeout(timer);
+                        timer = setTimeout(function() {
+                            fn.apply(context, args);
+                        }, delay);
+                    };
+                }
+                searchInput.on('input', debounce(function() {
+                    api.search(this.value).draw();
+                }, 2000));
+            }
         });
     });
-
 </script>
-
 </body>
 </html>

@@ -62,22 +62,20 @@
 
             <div class="mb-3">
                 <label for="authorId" class="form-label">Author:</label>
-                <select id="authorId" name="authorId" class="form-select" th:field="*{authorId}" required>
+                <select id="authorId" class="form-select" th:field="*{authorId}" required>
                     <option value="">Select Author</option>
-                    <option th:each="author : ${authors}"
-                            th:value="${author.id}"
-                            th:text="${author.name}"
-                            th:selected="${book.authorId == author.id}">
-                    </option>
+                    <option th:each="author : ${authors}" th:value="${author.id}" th:text="${author.name}"
+                            th:selected="${book.authorId == author.id}"></option>
                 </select>
             </div>
 
             <div class="mb-3">
                 <label for="publicationDate" class="form-label">Publication Date:</label>
-                <input type="date" id="publicationDate" class="form-control" th:field="*{publicationDate}" required />
-                <div class="invalid-feedback" th:if="${#fields.hasErrors('publicationDate')}"
-                th:errors="*{publicationDate}">Date error
-                </div>
+                <input type="date" id="publicationDate" class="form-control"
+                       th:field="*{publicationDate}"
+                       th:attr="max=${#dates.format(#dates.createNow(), 'yyyy-MM-dd')}"
+                       required />
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('publicationDate')}" th:errors="*{publicationDate}"></div>
             </div>
 
             <div class="mb-3">
@@ -85,15 +83,11 @@
                 <input type="datetime-local" id="lastUpdated" class="form-control" th:field="*{lastUpdated}" readonly />
             </div>
 
-            <button type="submit" class="btn btn-dark btn-save" sec:authorize="hasRole('ADMIN')">
-                Save
-            </button>
+            <button type="submit" class="btn btn-dark btn-save" sec:authorize="hasRole('ADMIN')">Save</button>
             <button type="button" class="btn btn-dark btn-save" sec:authorize="!hasRole('ADMIN')"
-                    onclick="alert('You cannot save books. Only admins can do this.')">
-                Save
-            </button>
-
+                    onclick="alert('You cannot save books. Only admins can do this.')">Save</button>
         </form>
+
 
         <a th:href="@{/books}" class="btn btn-outline-secondary w-100 mt-3">Back to List</a>
     </div>

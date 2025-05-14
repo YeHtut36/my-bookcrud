@@ -7,8 +7,6 @@ import java.time.LocalDate;
 /**
  * @author Zin Ko Win
  */
-
-
 @Data
 public class SearchData {
     private LocalDate fromDate;

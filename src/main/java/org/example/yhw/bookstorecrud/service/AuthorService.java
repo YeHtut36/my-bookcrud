@@ -2,11 +2,16 @@ package org.example.yhw.bookstorecrud.service;
 
 
 import lombok.AllArgsConstructor;
+import org.example.yhw.bookstorecrud.dto.AuthorDTO;
 import org.example.yhw.bookstorecrud.exception.ResourceNotFoundException;
+import org.example.yhw.bookstorecrud.mapper.AuthorMapper;
 import org.example.yhw.bookstorecrud.model.Author;
+import org.example.yhw.bookstorecrud.query.QueryHelper;
+import org.example.yhw.bookstorecrud.queryCriteria.AuthorCriteria;
 import org.example.yhw.bookstorecrud.repository.AuthorRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -16,13 +21,17 @@ import java.util.Optional;
 public class AuthorService {
 
     private final AuthorRepository authorRepository;
+    private final AuthorMapper authorMapper;
 
-    public Page<Author> searchAuthors(String search, Pageable pageable) {
-        return authorRepository.findByNameContainingIgnoreCase(search,pageable);
+    public Page<AuthorDTO> searchAuthors(AuthorCriteria authorCriteria, Pageable pageable) {
+        Specification<Author> specification = (root, query, cb) ->
+                QueryHelper.getPredicate(root, authorCriteria, query, cb);
+        return authorRepository.findAll(specification, pageable).map(authorMapper::toAuthorDto);
     }
 
-    public Page<Author> getAllAuthors(Pageable pageable) {
-        return authorRepository.findAll(pageable);
+    public Page<AuthorDTO> getAllAuthors(Pageable pageable) {
+        return authorRepository.findAll(pageable)
+                .map(authorMapper::toAuthorDto);
     }
 
     public Optional<Author> getAuthorById(Long id) {

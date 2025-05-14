@@ -1,11 +1,19 @@
 package org.example.yhw.bookstorecrud.service;
 
 import lombok.AllArgsConstructor;
+import org.example.yhw.bookstorecrud.dto.BookDTO;
+import org.example.yhw.bookstorecrud.dto.UserDTO;
+import org.example.yhw.bookstorecrud.mapper.UserMapper;
+import org.example.yhw.bookstorecrud.model.Book;
 import org.example.yhw.bookstorecrud.model.User;
+import org.example.yhw.bookstorecrud.query.QueryHelper;
+import org.example.yhw.bookstorecrud.queryCriteria.BookCriteria;
+import org.example.yhw.bookstorecrud.queryCriteria.UserCriteria;
 import org.example.yhw.bookstorecrud.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -23,6 +31,7 @@ import java.util.Optional;
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -46,8 +55,10 @@ public class UserService implements UserDetailsService {
         );
     }
 
-    public Page<User> searchUsers(String search, Pageable pageable) {
-        return userRepository.findByUsernameContainingIgnoreCase(search, pageable);
+    public Page<UserDTO> searchUsers(UserCriteria criteria, Pageable pageable) {
+        Specification<User> specification = (root, query, cb) -> QueryHelper.getPredicate(root, criteria, query, cb);
+        return userRepository.findAll(specification, pageable)
+                .map(userMapper::toUserDto);
     }
 
     public User saveUser(User user) {

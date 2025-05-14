@@ -1,19 +1,23 @@
 package org.example.yhw.bookstorecrud.controller;
 
+import lombok.extern.slf4j.Slf4j;
+import org.example.yhw.bookstorecrud.dto.AuthorDTO;
 import org.example.yhw.bookstorecrud.exception.ResourceNotFoundException;
 import org.example.yhw.bookstorecrud.model.Author;
-
+import org.example.yhw.bookstorecrud.queryCriteria.AuthorCriteria;
 import org.example.yhw.bookstorecrud.service.AuthorService;
+import org.example.yhw.bookstorecrud.vo.DataTableInput;
+import org.example.yhw.bookstorecrud.vo.DataTableOutput;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-
+@Slf4j
 @Controller
 @RequestMapping("/authors")
 public class AuthorController {
@@ -21,34 +25,46 @@ public class AuthorController {
     private final AuthorService authorService;
 
     @Autowired
-    public AuthorController( AuthorService authorService) {
+    public AuthorController(AuthorService authorService) {
         this.authorService = authorService;
     }
-
     @GetMapping
-    public String listAuthors(@RequestParam(defaultValue = "0") int page,
-                              @RequestParam(defaultValue = "5") int size,
-                              @RequestParam(required = false) String search,
-                              Model model) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Author> authorPage = (search != null && !search.isEmpty())
-                ? authorService.searchAuthors(search, pageable)
-                : authorService.getAllAuthors(pageable);
-
-        model.addAttribute("authorPage", authorPage);
-        model.addAttribute("search", search);
+    public String showAuthorList() {
         return "author-list";
     }
 
+    @PostMapping(path = "/api",consumes = "application/json", produces = "application/json")
+    public ResponseEntity<DataTableOutput<AuthorDTO>> listAuthors(@RequestBody DataTableInput dataTableInput) {
+        String searchValue = "";
+        if (dataTableInput.getSearch() != null && dataTableInput.getSearch().getValue() != null) {
+            searchValue = dataTableInput.getSearch().getValue().trim();
+        }
+
+        AuthorCriteria criteria = new AuthorCriteria();
+        criteria.setName(searchValue);
+
+        Pageable pageable = dataTableInput.getPageable();
+
+        Page<AuthorDTO> authorPage = authorService.searchAuthors(criteria, pageable);
+
+        long totalRecords = authorService.getAllAuthors(Pageable.unpaged()).getTotalElements();
+
+        DataTableOutput<AuthorDTO> output = DataTableOutput.of(authorPage, totalRecords, dataTableInput);
+        output.setDraw(dataTableInput.getDraw());
+
+        return ResponseEntity.ok(output);
+    }
+
+
     @GetMapping("/new")
-    @PreAuthorize( "hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public String createAuthorForm(Model model) {
         model.addAttribute("author", new Author());
         return "author-form";
     }
 
     @GetMapping("/edit/{id}")
-    @PreAuthorize( "hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public String editAuthorForm(@PathVariable Long id, Model model) {
         Author author = authorService.getAuthorById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Author not found with id: " + id));
@@ -57,24 +73,22 @@ public class AuthorController {
     }
 
     @PostMapping("/save")
-    @PreAuthorize( "hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public String saveAuthor(@ModelAttribute Author author) {
         authorService.saveAuthor(author);
         return "redirect:/authors";
     }
 
     @GetMapping("/delete/{id}")
-    @PreAuthorize( "hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public String deleteAuthor(@PathVariable Long id) {
-//        Author author = authorService.getAuthorById(id);
-//        List<Book> books = author.getBooks();
         try {
             if (authorService.hasBooks(id)) {
                 return "redirect:/authors?warning=Author has books, cannot be deleted";
             }
             authorService.deleteAuthor(id);
             return "redirect:/authors";
-        } catch (ResourceNotFoundException e){
+        } catch (ResourceNotFoundException e) {
             return "redirect:/authors?error=" + e.getMessage();
         }
     }

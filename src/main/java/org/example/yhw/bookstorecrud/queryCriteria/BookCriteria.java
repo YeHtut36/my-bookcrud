@@ -24,8 +24,11 @@ public class BookCriteria {
     @Query(propName = "publicationDate", type = Type.BETWEEN)
     private List<String> publicationDate;
 
+    private String searchValue;
+
     public BookCriteria(String blurry) {
         this.blurry = blurry;
     }
+
 
 }
