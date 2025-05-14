@@ -183,7 +183,7 @@
                 }
                 searchInput.on('input', debounce(function() {
                     api.search(this.value).draw();
-                }, 2000));
+                }, 1000));
             }
         });
     });
