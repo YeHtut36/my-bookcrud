@@ -1,5 +1,6 @@
 package org.example.yhw.bookstorecrud.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
 import org.example.yhw.bookstorecrud.dto.AuthorDTO;
@@ -37,14 +38,14 @@ public class BookController {
     private final BookService bookService;
     private final AuthorService authorService;
     private final BookMapper bookMapper;
-    private final BookRepository bookRepository;
+    private final ObjectMapper objectMapper;
 
     @Autowired
-    public BookController(BookService bookService , AuthorService authorService, BookMapper bookMapper, BookRepository bookRepository) {
+    public BookController(BookService bookService , AuthorService authorService, BookMapper bookMapper, ObjectMapper objectMapper) {
         this.bookService = bookService;
         this.authorService = authorService;
         this.bookMapper = bookMapper;
-        this.bookRepository = bookRepository;
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping
@@ -60,27 +61,21 @@ public class BookController {
     @ResponseBody
     public ResponseEntity<DataTableOutput<BookDTO>> listBooks(@RequestBody DataTableInput dataTableInput) {
         try {
-            if (dataTableInput.getOrder() == null || dataTableInput.getOrder().isEmpty()
-                    || dataTableInput.getColumns() == null || dataTableInput.getColumns().isEmpty()) {
-                dataTableInput.getColumns().add(new Column("title", "", true, true, new Search("", false)));
-                dataTableInput.getOrder().add(new Order(0, "asc"));
-            }
-
             Pageable pageable = dataTableInput.getPageable();
-            String searchValue = "";
+            BookCriteria criteria = new BookCriteria();
+
+            if (dataTableInput.getQueryCriteria() != null && !dataTableInput.getQueryCriteria().isNull()) {
+                criteria = objectMapper.treeToValue(dataTableInput.getQueryCriteria(), BookCriteria.class);
+            }
             if (dataTableInput.getSearch() != null && dataTableInput.getSearch().getValue() != null) {
-                searchValue = dataTableInput.getSearch().getValue().trim();
+                String globalSearch = dataTableInput.getSearch().getValue().trim();
+                if (!globalSearch.isEmpty()) {
+                    if (criteria.getBlurry() == null || criteria.getBlurry().isEmpty()) {
+                        criteria.setBlurry(globalSearch);
+                    }
+                }
             }
-
-            Page<BookDTO> bookPage;
-            if (!searchValue.isEmpty()) {
-                BookCriteria criteria = new BookCriteria();
-                criteria.setBlurry(searchValue);
-                bookPage = bookService.searchBooks(criteria, pageable);
-            } else {
-                bookPage = bookService.getAllBooks(pageable);
-            }
-
+            Page<BookDTO> bookPage = bookService.searchBooks(criteria, pageable);
             long totalRecords = bookService.countAllBooks();
 
             DataTableOutput<BookDTO> output = DataTableOutput.of(bookPage, totalRecords, dataTableInput);

@@ -1,6 +1,7 @@
 package org.example.yhw.bookstorecrud.controller;
 
-import lombok.var;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.example.yhw.bookstorecrud.dto.UserDTO;
 import org.example.yhw.bookstorecrud.mapper.UserMapper;
 import org.example.yhw.bookstorecrud.model.User;
@@ -9,7 +10,6 @@ import org.example.yhw.bookstorecrud.service.UserService;
 import org.example.yhw.bookstorecrud.vo.DataTableInput;
 import org.example.yhw.bookstorecrud.vo.DataTableOutput;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,16 +19,19 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @Controller
 @RequestMapping("/users")
 public class UserController {
 
     private final UserService userService;
     private final UserMapper userMapper;
+    private final ObjectMapper objectMapper;
 
-    public UserController(UserService userService, UserMapper userMapper) {
+    public UserController(UserService userService, UserMapper userMapper, ObjectMapper objectMapper) {
         this.userService = userService;
         this.userMapper = userMapper;
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping
@@ -40,25 +43,32 @@ public class UserController {
     @PostMapping(path = "/api", consumes = "application/json", produces = "application/json")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<DataTableOutput<UserDTO>> listUsers(@RequestBody DataTableInput dataTableInput) {
-        String searchValue = "";
-        if (dataTableInput.getSearch() != null && dataTableInput.getSearch().getValue() != null) {
-            searchValue = dataTableInput.getSearch().getValue().trim();
+        try {
+            Pageable pageable = dataTableInput.getPageable();
+            UserCriteria criteria = new UserCriteria();
+
+            if (dataTableInput.getQueryCriteria() != null && !dataTableInput.getQueryCriteria().isNull()) {
+                criteria = objectMapper.treeToValue(dataTableInput.getQueryCriteria(), UserCriteria.class);
+            }
+            if (dataTableInput.getSearch() != null && dataTableInput.getSearch().getValue() != null) {
+                String globalSearch = dataTableInput.getSearch().getValue().trim();
+                if (!globalSearch.isEmpty() && (criteria.getUsername() == null || criteria.getUsername().isEmpty())) {
+                    criteria.setUsername(globalSearch);
+                }
+            }
+
+            Page<UserDTO> authorPage = userService.searchUsers(criteria, pageable);
+            long totalRecords = userService.countUsers();
+
+            DataTableOutput<UserDTO> output = DataTableOutput.of(authorPage, totalRecords, dataTableInput);
+            output.setDraw(dataTableInput.getDraw());
+
+            return ResponseEntity.ok(output);
+        } catch (Exception e) {
+            log.error("Error processing DataTables request", e);
+            return ResponseEntity.internalServerError().body(new DataTableOutput<>());
         }
-
-        UserCriteria criteria = new UserCriteria();
-        criteria.setUsername(searchValue);
-
-        Pageable pageable = dataTableInput.getPageable();
-
-        var userPage = userService.searchUsers(criteria, pageable);
-        long totalRecords = userService.getAllUsers(Pageable.unpaged()).getTotalElements();
-
-        DataTableOutput<UserDTO> output = DataTableOutput.of(userPage, totalRecords, dataTableInput);
-        output.setDraw(dataTableInput.getDraw());
-
-        return ResponseEntity.ok(output);
     }
-
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")

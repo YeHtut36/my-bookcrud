@@ -1,5 +1,6 @@
 package org.example.yhw.bookstorecrud.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.example.yhw.bookstorecrud.dto.AuthorDTO;
 import org.example.yhw.bookstorecrud.exception.ResourceNotFoundException;
@@ -25,11 +26,13 @@ public class AuthorController {
 
     private final AuthorService authorService;
     private final AuthorMapper authorMapper;
+    private final ObjectMapper objectMapper;
 
     @Autowired
-    public AuthorController(AuthorService authorService, AuthorMapper authorMapper) {
+    public AuthorController(AuthorService authorService, AuthorMapper authorMapper, ObjectMapper objectMapper) {
         this.authorService = authorService;
         this.authorMapper = authorMapper;
+        this.objectMapper = objectMapper;
     }
     @GetMapping
     public String showAuthorList() {
@@ -38,24 +41,32 @@ public class AuthorController {
 
     @PostMapping(path = "/api",consumes = "application/json", produces = "application/json")
     public ResponseEntity<DataTableOutput<AuthorDTO>> listAuthors(@RequestBody DataTableInput dataTableInput) {
-        String searchValue = "";
-        if (dataTableInput.getSearch() != null && dataTableInput.getSearch().getValue() != null) {
-            searchValue = dataTableInput.getSearch().getValue().trim();
+        try {
+            Pageable pageable = dataTableInput.getPageable();
+            AuthorCriteria criteria = new AuthorCriteria();
+
+            if (dataTableInput.getQueryCriteria() != null && !dataTableInput.getQueryCriteria().isNull()) {
+                criteria = objectMapper.treeToValue(dataTableInput.getQueryCriteria(), AuthorCriteria.class);
+            }
+
+            if (dataTableInput.getSearch() != null && dataTableInput.getSearch().getValue() != null) {
+                String globalSearch = dataTableInput.getSearch().getValue().trim();
+                if (!globalSearch.isEmpty() && (criteria.getName() == null || criteria.getName().isEmpty())) {
+                    criteria.setName(globalSearch);
+                }
+            }
+
+            Page<AuthorDTO> authorPage = authorService.searchAuthors(criteria, pageable);
+            long totalRecords = authorService.countAuthors();
+
+            DataTableOutput<AuthorDTO> output = DataTableOutput.of(authorPage, totalRecords, dataTableInput);
+            output.setDraw(dataTableInput.getDraw());
+
+            return ResponseEntity.ok(output);
+        } catch (Exception e) {
+            log.error("Error processing DataTables request", e);
+            return ResponseEntity.internalServerError().body(new DataTableOutput<>());
         }
-
-        AuthorCriteria criteria = new AuthorCriteria();
-        criteria.setName(searchValue);
-
-        Pageable pageable = dataTableInput.getPageable();
-
-        Page<AuthorDTO> authorPage = authorService.searchAuthors(criteria, pageable);
-
-        long totalRecords = authorService.getAllAuthors(Pageable.unpaged()).getTotalElements();
-
-        DataTableOutput<AuthorDTO> output = DataTableOutput.of(authorPage, totalRecords, dataTableInput);
-        output.setDraw(dataTableInput.getDraw());
-
-        return ResponseEntity.ok(output);
     }
 
     @GetMapping("/{id}")

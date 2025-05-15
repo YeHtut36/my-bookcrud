@@ -1,6 +1,5 @@
 package org.example.yhw.bookstorecrud.service;
 
-
 import lombok.AllArgsConstructor;
 import org.example.yhw.bookstorecrud.dto.AuthorDTO;
 import org.example.yhw.bookstorecrud.exception.ResourceNotFoundException;
@@ -53,5 +52,9 @@ public class AuthorService {
         Author author = getAuthorById(authorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Author not found with id: " + authorId));
         return author.getBooks() != null && !author.getBooks().isEmpty();
+    }
+
+    public long countAuthors() {
+        return authorRepository.count();
     }
 }

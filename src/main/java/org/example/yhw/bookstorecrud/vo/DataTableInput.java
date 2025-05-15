@@ -3,6 +3,7 @@ package org.example.yhw.bookstorecrud.vo;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -20,6 +21,7 @@ import java.util.Map;
  * @author Zin Ko Win
  */
 
+@Slf4j
 @Data
 public class DataTableInput {
 
@@ -147,8 +149,27 @@ public class DataTableInput {
      */
     public Pageable getPageable() {
         int page = this.getStart() / this.getLength();
-        Direction dir = Direction.valueOf(order.get(0).getDir().toUpperCase());
-        String columnName = columns.get(order.get(0).getColumn()).getData();
+
+        Direction dir = Direction.ASC;
+        String columnName = "id";
+
+        try {
+            if (order != null && !order.isEmpty() && columns != null && !columns.isEmpty()) {
+                Order firstOrder = order.get(0);
+                int colIndex = firstOrder.getColumn();
+
+                if (colIndex >= 0 && colIndex < columns.size()) {
+                    columnName = columns.get(colIndex).getData();
+                }
+
+                if (firstOrder.getDir() != null) {
+                    dir = Direction.valueOf(firstOrder.getDir().toUpperCase());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Invalid order or columns data in DataTableInput, using default sorting", e);
+        }
+
         return PageRequest.of(page, length, Sort.by(dir, columnName));
     }
 

@@ -31,10 +31,9 @@
             </ul>
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item" sec:authorize="isAuthenticated()">
-                    <span class="nav-link user-info">
-                        <i class="bi bi-person-circle"></i>
-                        <span sec:authentication="name"></span>
-                    </span>
+                    <a class="nav-link user-info" th:href="@{/users/profile}">
+                        <i class="bi bi-person-circle"></i> <span sec:authentication="name"></span>
+                    </a>
                 </li>
                 <li class="nav-item" sec:authorize="isAuthenticated()">
                     <form th:action="@{/logout}" method="post" class="nav-link">

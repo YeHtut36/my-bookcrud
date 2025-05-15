@@ -14,7 +14,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-
 import java.util.Optional;
 
 @Service
@@ -39,7 +38,6 @@ public class BookService {
     public long countAllBooks() {
         return bookRepository.count();
     }
-
 
     public Optional<Book> getBookById(Long id){
         return bookRepository.findById(id);

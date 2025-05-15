@@ -1,17 +1,13 @@
 package org.example.yhw.bookstorecrud.service;
 
 import lombok.AllArgsConstructor;
-import org.example.yhw.bookstorecrud.dto.BookDTO;
 import org.example.yhw.bookstorecrud.dto.UserDTO;
 import org.example.yhw.bookstorecrud.dto.UserRegistrationDTO;
 import org.example.yhw.bookstorecrud.mapper.UserMapper;
-import org.example.yhw.bookstorecrud.model.Book;
 import org.example.yhw.bookstorecrud.model.User;
 import org.example.yhw.bookstorecrud.query.QueryHelper;
-import org.example.yhw.bookstorecrud.queryCriteria.BookCriteria;
 import org.example.yhw.bookstorecrud.queryCriteria.UserCriteria;
 import org.example.yhw.bookstorecrud.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -67,7 +63,6 @@ public class UserService implements UserDetailsService {
         if (user == null) {
             throw new IllegalArgumentException("User cannot be null");
         }
-
         normalizeRole(user);
 
         if (user.getId() != null) {
@@ -132,6 +127,9 @@ public class UserService implements UserDetailsService {
         user.setRole(registrationDTO.getRole().startsWith("ROLE_") ? registrationDTO.getRole() : "ROLE_" + registrationDTO.getRole());
 
         userRepository.save(user);
+    }
+    public long countUsers() {
+        return userRepository.count();
     }
 
 }
