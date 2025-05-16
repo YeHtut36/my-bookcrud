@@ -2,15 +2,11 @@ package org.example.yhw.bookstorecrud.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import lombok.var;
-import org.example.yhw.bookstorecrud.dto.AuthorDTO;
 import org.example.yhw.bookstorecrud.dto.BookDTO;
 import org.example.yhw.bookstorecrud.mapper.BookMapper;
 import org.example.yhw.bookstorecrud.model.Author;
 import org.example.yhw.bookstorecrud.model.Book;
-import org.example.yhw.bookstorecrud.queryCriteria.AuthorCriteria;
 import org.example.yhw.bookstorecrud.queryCriteria.BookCriteria;
-import org.example.yhw.bookstorecrud.repository.BookRepository;
 import org.example.yhw.bookstorecrud.service.AuthorService;
 import org.example.yhw.bookstorecrud.service.BookService;
 import org.example.yhw.bookstorecrud.vo.*;
@@ -18,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -119,10 +114,10 @@ public class BookController {
             return "book-form";
         }
 
-        Book book = bookMapper.toEntity(bookDTO);
         Author author = authorService.getAuthorById(bookDTO.getAuthorId())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid author Id: " + bookDTO.getAuthorId()));
 
+        Book book = bookMapper.toEntity(bookDTO);
         book.setAuthor(author);
         bookMapper.setDates(book);
 
