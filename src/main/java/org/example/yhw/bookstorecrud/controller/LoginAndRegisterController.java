@@ -1,10 +1,7 @@
 package org.example.yhw.bookstorecrud.controller;
 
 import org.example.yhw.bookstorecrud.dto.UserRegistrationDTO;
-import org.example.yhw.bookstorecrud.model.User;
-import org.example.yhw.bookstorecrud.repository.UserRepository;
 import org.example.yhw.bookstorecrud.service.UserService;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
