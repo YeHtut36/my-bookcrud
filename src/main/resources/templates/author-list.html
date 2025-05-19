@@ -139,9 +139,9 @@
                     render: function(data) {
                         if (!isAdmin) return '';
                         return `
-                            <a href='/authors/${data}' class='btn btn-sm btn-warning'>Edit</a>
-                            <a href='/authors/delete/${data}' class='btn btn-sm btn-danger' onclick="return confirm('Are you sure?')">Delete</a>
-                        `;
+                        <a href='/authors/${data}' class='btn btn-sm btn-warning me-1'>Edit</a>
+                        <a href='/authors/delete/${data}' class='btn btn-sm btn-danger' onclick="return confirm('Are you sure?')">Delete</a>
+                    `;
                     },
                     orderable: false,
                     searchable: false
@@ -170,6 +170,40 @@
                 searchInput.on('input', debounce(function() {
                     api.search(this.value).draw();
                 }, 1000));
+            }
+        });
+
+        $('#authorTable tbody').on('click', 'a.btn-danger', function(event) {
+            event.preventDefault();
+
+            var $link = $(this);
+            var $row = $link.closest('tr');
+
+            var booksCountText = $row.find('td').eq(2).text().trim();
+            var booksCount = parseInt(booksCountText, 10);
+            if (isNaN(booksCount)) booksCount = 0;
+
+            if (booksCount > 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Cannot delete author',
+                    text: "This author has linked books. Please delete the books first.",
+                    confirmButtonText: 'OK'
+                });
+            } else {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "This will permanently delete the author.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = $link.attr('href');
+                    }
+                });
             }
         });
     });
